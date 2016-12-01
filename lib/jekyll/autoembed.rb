@@ -4,15 +4,27 @@ require 'nokogiri'
 module Jekyll
   module Autoembed
     def self.execute(doc)
-      parsed_doc = Nokogiri::HTML::DocumentFragment.parse(doc.output)
+
+      if doc.output.include? "<body"
+        parsed_doc = Nokogiri::HTML::Document.parse(doc.output)
+        body = parsed_doc.at_css('body')
+        replace_nodes(body)
+      else 
+        parsed_doc = Nokogiri::HTML::DocumentFragment.parse(doc.output)
+        replace_nodes(parsed_doc)
+      end
+
+      doc.output = parsed_doc.to_html
+      doc
+    end
+
+    def self.replace_nodes(parsed_doc)
       parsed_doc.search('.//text()').each do |node|
         content = node.to_html
         html = autoembed(content)
         next if html == content
         node.replace(html)
       end
-      doc.output = parsed_doc.to_html
-      doc
     end
 
     def self.autoembed(content)
